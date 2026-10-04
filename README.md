@@ -11,7 +11,26 @@ proxies its checkout request to the local payment API. Switch to a live Stripe
 secret key only after configuring the production API and verifying the account.
 
 Set `CHECKOUT_ORIGIN` to the deployed site's origin when deploying, and route
-`/api/create-checkout-session` to `server.js`.
+`/api/create-checkout-session` to the Express server in `express.js`.
+
+## Deploy to Heroku
+
+The Heroku web process builds the Vite frontend and serves it together with the
+Stripe checkout API from `express.js`. The Heroku `PORT` environment variable is
+used automatically, and client-side routes such as `/teams` fall back to the
+React app.
+
+1. Create a Heroku app and connect this Git repository (or create an app with
+  the Heroku CLI).
+2. In Heroku **Settings → Config Vars**, set `STRIPE_SECRET_KEY` to your Stripe
+  secret key and `CHECKOUT_ORIGIN` to the exact public origin, such as
+  `https://your-app-name.herokuapp.com` (no trailing slash). Keep the key out
+  of source control. Use a test key first, then switch to a live key only when
+  payments are ready for production.
+3. Deploy the `main` branch. Heroku runs `npm run build` and starts the app with
+  the included `Procfile`.
+4. Visit the deployed site and verify the homepage, `/teams`, and a Stripe test
+  donation checkout.
 
 The React + TypeScript + Vite template information follows.
 
