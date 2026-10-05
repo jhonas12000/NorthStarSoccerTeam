@@ -47,7 +47,7 @@ export default function Donation() {
   };
 
   return (
-    <section id="support" className="bg-blue-950 px-4 py-16 text-white sm:px-6 md:py-20">
+    <section id="support" className="bg-blue-950 px-2 py-12 text-white sm:px-6 md:py-20">
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-amber-300">

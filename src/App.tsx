@@ -3,11 +3,33 @@ import Hero from './components/Hero';
 import About from './components/About';
 import Donation from './components/Donation';
 import Teams from './components/Teams';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Leadership from './components/Leadership';
+import { useEffect } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+
+function ScrollToHash() {
+  const { hash, pathname } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [hash, pathname]);
+
+  return null;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToHash />
       <Navbar />
 
       <main>
@@ -18,6 +40,7 @@ function App() {
               <>
                 <Hero />
                 <About />
+                <Leadership />
                 <Donation />
               </>
             }

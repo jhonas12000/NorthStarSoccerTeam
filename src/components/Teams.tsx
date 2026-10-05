@@ -8,7 +8,7 @@ const teams = [
 
 export default function Teams() {
   return (
-    <section className="min-h-[60vh] bg-slate-50 px-4 py-16 sm:px-6 md:py-20">
+    <section className="min-h-[60vh] bg-slate-50 px-2 py-12 sm:px-6 md:py-20">
       <div className="mx-auto max-w-6xl">
         <header className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-amber-600">

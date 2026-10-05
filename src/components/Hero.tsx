@@ -27,8 +27,8 @@ export default function Hero() {
   }, []);
 
   return (
-    <section id="home" className="bg-white">
-      <div className="grid lg:grid-cols-2">
+    <section id="home" className="bg-white px-2 sm:px-6 lg:px-0">
+      <div className="mx-auto grid max-w-7xl overflow-hidden lg:grid-cols-2">
         {/* Team photo */}
         <div
           className="relative h-[38svh] min-h-72 lg:order-2 lg:h-auto"
@@ -69,7 +69,7 @@ export default function Hero() {
         </div>
 
         {/* Hero content */}
-        <div className="flex items-center px-4 pt-10 pb-4 sm:px-8 lg:order-1 lg:px-16 lg:py-8">
+        <div className="flex items-center px-0 pt-8 pb-4 sm:py-10 lg:order-1 lg:px-16 lg:py-8">
           <div className="mx-auto max-w-2xl text-center lg:text-left">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">
               Community • Teamwork • Opportunity
@@ -86,7 +86,7 @@ export default function Hero() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <a
-                href="#team"
+                href="/#team"
                 className="flex min-h-12 items-center justify-center rounded-md bg-amber-400 px-6 py-3 font-bold text-blue-950 transition hover:bg-amber-300"
               >
                 Meet Our Team
