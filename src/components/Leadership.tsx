@@ -68,7 +68,7 @@ export default function Leadership() {
                   <img
                     src={photo}
                     alt={`${title} profile`}
-                    className="h-24 w-16 shrink-0 rounded-md object-cover sm:h-32 sm:w-24"
+                    className="mt-2 h-24 w-16 shrink-0 rounded-md object-cover sm:mt-3 sm:h-32 sm:w-24"
                   />
                   <p className="mt-1 text-sm leading-6 text-slate-600 sm:mt-2 sm:text-base sm:leading-7">
                     {isExpanded ? description : `${previewWords}…`}{' '}
