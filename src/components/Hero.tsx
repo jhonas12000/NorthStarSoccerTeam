@@ -80,7 +80,7 @@ export default function Hero() {
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-slate-600">
-              North Star Soccer Team helps young athletes develop confidence,
+              North Star Youth Development Foundation Inc. helps young athletes develop confidence,
               discipline, leadership, and teamwork through soccer.
             </p>
 

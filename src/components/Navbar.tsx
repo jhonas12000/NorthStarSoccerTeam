@@ -21,7 +21,7 @@ export default function Navbar() {
               <p className="font-bold leading-tight text-blue-950">
                 North Star
               </p>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-slate-500">
                 Youth Development Foundation Inc
               </p>
             </div>

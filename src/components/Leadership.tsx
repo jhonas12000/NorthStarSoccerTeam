@@ -49,7 +49,7 @@ export default function Leadership() {
             Club leadership
           </h2>
           <p className="mt-4 leading-7 text-slate-600">
-            The people helping guide and support North Star Soccer Team.
+            The people helping guide and support North Star Foudation.
           </p>
         </header>
 
