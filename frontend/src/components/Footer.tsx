@@ -37,7 +37,7 @@ export default function Footer() {
             href="mailto:nothstarprime100@gmail.com"
             className="mt-3 inline-block leading-7 text-blue-100 hover:text-white"
           >
-            nothstarprime100@gmail.com
+            northstarprime100@gmail.com
           </a>
         </div>
 
