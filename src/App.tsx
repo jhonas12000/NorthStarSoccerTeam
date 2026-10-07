@@ -5,6 +5,7 @@ import Donation from './components/Donation';
 import Teams from './components/Teams';
 import Leadership from './components/Leadership';
 import Gallery from './components/Gallery';
+import Footer from './components/Footer';
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -61,6 +62,7 @@ function App() {
           />
         </Routes>
       </main>
+      <Footer />
     </BrowserRouter>
   );
 }

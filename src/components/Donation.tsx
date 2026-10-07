@@ -53,7 +53,7 @@ export default function Donation() {
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-amber-300">
             Make a difference
           </p>
-          <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">Support our team</h2>
+          <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">Support our Foundation</h2>
           <p className="mx-auto mt-4 max-w-2xl leading-7 text-blue-100">
             Your contribution helps young athletes access coaching, equipment, and opportunities to grow.
           </p>
