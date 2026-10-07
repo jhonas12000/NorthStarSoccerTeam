@@ -11,12 +11,20 @@ proxies its checkout request to the local payment API. Switch to a live Stripe
 secret key only after configuring the production API and verifying the account.
 
 Set `CHECKOUT_ORIGIN` to the deployed site's origin when deploying, and route
-`/api/create-checkout-session` to the Express server in `express.js`.
+`/api/create-checkout-session` to the Express server in `backend/express.js`.
+
+## Project layout
+
+- `frontend/` contains the React UI, components, tests, Vite configuration, and
+  public images.
+- `backend/` contains the Express server.
+- Root-level `package.json` keeps shared scripts and dependencies; the frontend
+  build is written to root `dist/` for the server and Heroku to serve.
 
 ## Deploy to Heroku
 
 The Heroku web process builds the Vite frontend and serves it together with the
-Stripe checkout API from `express.js`. The Heroku `PORT` environment variable is
+Stripe checkout API from `backend/express.js`. The Heroku `PORT` environment variable is
 used automatically, and client-side routes such as `/teams` fall back to the
 React app.
 
