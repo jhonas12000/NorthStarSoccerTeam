@@ -22,7 +22,7 @@ export default function Navbar() {
                 North Star
               </p>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                Soccer Team
+                Youth Development Foundation Inc
               </p>
             </div>
           </Link>
@@ -48,6 +48,9 @@ export default function Navbar() {
             </Link>
             <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/teams">
               Teams
+            </Link>
+            <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/gallery">
+              Gallery
             </Link>
             <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/#events">
               Events
@@ -94,6 +97,14 @@ export default function Navbar() {
                 onClick={closeMenu}
               >
                 Teams
+              </Link>
+
+              <Link
+                className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
+                to="/gallery"
+                onClick={closeMenu}
+              >
+                Gallery
               </Link>
 
               <Link
