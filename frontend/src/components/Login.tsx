@@ -48,17 +48,9 @@ export default function Login() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between gap-3">
-              <label htmlFor="login-password" className="block text-sm font-semibold text-blue-950">
-                Password
-              </label>
-              <a
-                href="mailto:nothstarprime100@gmail.com?subject=Password%20help"
-                className="text-sm font-semibold text-blue-800 hover:underline"
-              >
-                Forgot password?
-              </a>
-            </div>
+            <label htmlFor="login-password" className="block text-sm font-semibold text-blue-950">
+              Password
+            </label>
             <div className="mt-2 flex rounded-md border border-slate-300 focus-within:border-blue-800 focus-within:ring-2 focus-within:ring-blue-100">
               <input
                 id="login-password"
@@ -79,6 +71,14 @@ export default function Login() {
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
+            </div>
+            <div className="mt-2 text-right">
+              <a
+                href="mailto:nothstarprime100@gmail.com?subject=Password%20help"
+                className="text-sm font-semibold text-blue-800 hover:underline"
+              >
+                Forgot password?
+              </a>
             </div>
           </div>
 
