@@ -1,5 +1,38 @@
 # React + TypeScript + Vite
 
+## MongoDB setup
+
+The Express API uses the official MongoDB Node.js driver. Create a free MongoDB
+Atlas cluster, create a database user, and allow your development IP address in
+Atlas Network Access. Then:
+
+1. Copy `.env.example` to `.env`.
+2. Replace `MONGODB_URI` with the connection string from Atlas and set
+   `MONGODB_DATABASE` if you want a different database name.
+3. Run `npm run server` and `npm run dev` in separate terminals.
+4. Open `http://localhost:4242/api/health` to verify the connection.
+
+Never place `MONGODB_URI` in frontend code or commit `.env`. In Heroku, add
+`MONGODB_URI` and `MONGODB_DATABASE` as Config Vars.
+
+The starter member API provides:
+
+- `GET /api/health` — checks the MongoDB connection
+- `GET /api/members` — lists up to 100 members
+- `GET /api/members/:id` — gets one member
+- `POST /api/members` — creates a player, coach, staff member, or supporter
+
+Example request body for `POST /api/members`:
+
+```json
+{
+  "firstName": "Alex",
+  "lastName": "Morgan",
+  "email": "alex@example.com",
+  "role": "player"
+}
+```
+
 ## Stripe donations
 
 Donations use Stripe-hosted Checkout. Copy `.env.example` to `.env` and set

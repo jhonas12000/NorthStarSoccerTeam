@@ -6,6 +6,7 @@ import Teams from './components/Teams';
 import Leadership from './components/Leadership';
 import Gallery from './components/Gallery';
 import Footer from './components/Footer';
+import Login from './components/Login';
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -49,6 +50,7 @@ function App() {
           />
           <Route path="/teams" element={<Teams />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/login" element={<Login />} />
           <Route
             path="*"
             element={
