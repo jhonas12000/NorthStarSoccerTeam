@@ -7,6 +7,12 @@ import Leadership from './components/Leadership';
 import Gallery from './components/Gallery';
 import Footer from './components/Footer';
 import Login from './components/Login';
+import MemberDashboard from './components/MemberDashboard';
+import AdminInvitationsPage from './components/AdminInvitationsPage';
+import Members from './components/Members';
+import AcceptInvitation from './components/AcceptInvitation';
+import MemberDetails from './components/MemberDetails';
+import AuthProvider from './AuthProvider';
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -32,11 +38,12 @@ function ScrollToHash() {
 function App() {
   return (
     <BrowserRouter>
-      <ScrollToHash />
-      <Navbar />
+      <AuthProvider>
+        <ScrollToHash />
+        <Navbar />
 
-      <main>
-        <Routes>
+        <main>
+          <Routes>
           <Route
             path="/"
             element={
@@ -51,6 +58,11 @@ function App() {
           <Route path="/teams" element={<Teams />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/member" element={<MemberDashboard />} />
+          <Route path="/members" element={<Members />} />
+          <Route path="/members/:id" element={<MemberDetails />} />
+          <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
+          <Route path="/accept-invite/:token" element={<AcceptInvitation />} />
           <Route
             path="*"
             element={
@@ -62,9 +74,10 @@ function App() {
               </section>
             }
           />
-        </Routes>
-      </main>
-      <Footer />
+          </Routes>
+        </main>
+        <Footer />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

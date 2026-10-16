@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --config frontend/vite.config.ts",
     "server": "node backend/express.js",
+    "create-admin": "node backend/scripts/create-admin.js",
     "start": "node backend/express.js",
     "build": "tsc -b && vite build --config frontend/vite.config.ts",
     "lint": "oxlint",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "bcrypt": "^6.0.0",
     "dotenv": "^18.0.8",
     "express": "^5.2.1",
     "mongodb": "^6.21.0",

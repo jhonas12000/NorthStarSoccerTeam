@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth-context';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const closeMenu = () => setMenuOpen(false);
+  const signOut = async () => {
+    await logout();
+    closeMenu();
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
@@ -58,9 +64,37 @@ export default function Navbar() {
             <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/#contact">
               Contact
             </Link>
-            <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/login">
-              Login
-            </Link>
+            {user && user.role !== 'user' && (
+              <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/members">
+                Members
+              </Link>
+            )}
+            {user && user.role !== 'user' ? (
+              <>
+                <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/member">
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="font-semibold text-blue-950 hover:text-blue-600"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : !user ? (
+              <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/login">
+                Login
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={signOut}
+                className="font-semibold text-blue-950 hover:text-blue-600"
+              >
+                Sign out
+              </button>
+            )}
 
             <Link
               className="rounded-md bg-amber-400 px-5 py-2.5 font-bold text-blue-950 hover:bg-amber-300"
@@ -123,13 +157,50 @@ export default function Navbar() {
                 Contact
               </Link>
 
-              <Link
-                className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
-                to="/login"
-                onClick={closeMenu}
-              >
-                Login
-              </Link>
+              {user && user.role !== 'user' && (
+                <Link
+                  className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
+                  to="/members"
+                  onClick={closeMenu}
+                >
+                  Members
+                </Link>
+              )}
+
+              {user && user.role !== 'user' ? (
+                <>
+                  <Link
+                    className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
+                    to="/member"
+                    onClick={closeMenu}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    className="rounded-md px-3 py-3 text-left font-semibold text-blue-950 hover:bg-slate-100"
+                    onClick={signOut}
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : !user ? (
+                <Link
+                  className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
+                  to="/login"
+                  onClick={closeMenu}
+                >
+                  Login
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="rounded-md px-3 py-3 text-left font-semibold text-blue-950 hover:bg-slate-100"
+                  onClick={signOut}
+                >
+                  Sign out
+                </button>
+              )}
 
               <Link
                 className="mt-2 rounded-md bg-amber-400 px-3 py-3 text-center font-bold text-blue-950"

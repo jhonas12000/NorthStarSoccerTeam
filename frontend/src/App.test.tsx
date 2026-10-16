@@ -11,6 +11,11 @@ afterEach(() => {
 beforeEach(() => {
   window.history.replaceState({}, '', '/');
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: false,
+    status: 401,
+    json: async () => ({ error: 'Authentication required.' }),
+  }));
 });
 
 describe('App navigation', () => {

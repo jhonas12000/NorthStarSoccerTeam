@@ -1,14 +1,43 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth, type AuthUser } from '../auth-context';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, password, remember }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || 'Unable to sign in.');
+        return;
+      }
+
+      setUser(result.user as AuthUser);
+      navigate(result.user.role === 'user' ? '/' : '/member', { replace: true });
+    } catch {
+      setError('Unable to reach the server. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -86,22 +115,25 @@ export default function Login() {
             <input
               type="checkbox"
               name="remember"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
               className="h-4 w-4 rounded border-slate-300 accent-blue-950"
             />
             Remember me
           </label>
 
-          {submitted && (
-            <p role="status" className="rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-              Sign-in is not connected yet. Please contact the club to access an account.
+          {error && (
+            <p role="alert" className="rounded-md bg-red-50 p-3 text-sm leading-6 text-red-800">
+              {error}
             </p>
           )}
 
           <button
             type="submit"
+            disabled={submitting}
             className="w-full rounded-md bg-amber-400 px-5 py-3 font-bold text-blue-950 transition hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-950"
           >
-            Sign in
+            {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 

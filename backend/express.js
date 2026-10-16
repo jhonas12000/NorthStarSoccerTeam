@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import { resolve } from "node:path";
 import { closeDatabase, getDatabaseStatus } from "./database.js";
+import authRouter, { requirePrivateAccess } from "./routes/auth.js";
+import invitationsRouter from "./routes/invitations.js";
 import membersRouter from "./routes/members.js";
 
 const app = express();
@@ -20,7 +22,9 @@ app.get("/api/health", async (_request, response) => {
   });
 });
 
-app.use("/api/members", membersRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/invitations", invitationsRouter);
+app.use("/api/members", requirePrivateAccess, membersRouter);
 
 app.use(express.static(distDirectory));
 

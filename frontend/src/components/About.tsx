@@ -12,7 +12,7 @@ export default function About() {
           </h2>
 
           <p className="mt-6 text-lg leading-8 text-slate-600">
-            North Star Soccer Team is a nonprofit organization dedicated to
+            North Star Foundation is a nonprofit organization dedicated to
             helping young athletes grow through soccer, mentorship, and
             teamwork.
           </p>
