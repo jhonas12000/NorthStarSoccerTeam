@@ -32,7 +32,7 @@ export default function Login() {
       }
 
       setUser(result.user as AuthUser);
-      navigate(result.user.role === 'user' ? '/' : '/member', { replace: true });
+      navigate('/member', { replace: true });
     } catch {
       setError('Unable to reach the server. Please try again.');
     } finally {

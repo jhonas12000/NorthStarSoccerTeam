@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import { useAuth } from '../auth-context';
+
 const teams = [
   { division: 'U-6', ageGroup: 'Under 6' },
   { division: 'U-8', ageGroup: 'Under 8' },
@@ -7,6 +10,9 @@ const teams = [
 ];
 
 export default function Teams() {
+  const { user } = useAuth();
+  const canViewRosters = user?.role === 'admin' || user?.role === 'head_coach' || user?.role === 'chairman';
+
   return (
     <section className="min-h-[60vh] bg-slate-50 px-2 py-12 sm:px-6 md:py-20">
       <div className="mx-auto max-w-6xl">
@@ -35,6 +41,15 @@ export default function Teams() {
               <p className="mt-2 leading-7 text-slate-600">
                 North Star youth soccer program · {division}
               </p>
+              {canViewRosters && (
+                <Link
+                  to={`/teams/${encodeURIComponent(division)}`}
+                  className="mt-5 inline-flex text-sm font-semibold text-blue-800 hover:underline"
+                  aria-label={`Show list for ${division}`}
+                >
+                  Show list <span className="ml-1" aria-hidden="true">→</span>
+                </Link>
+              )}
             </article>
           ))}
         </div>

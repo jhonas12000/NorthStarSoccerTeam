@@ -6,9 +6,11 @@ type Member = {
   id: string;
   firstName: string;
   lastName: string;
+  parentFirstNames?: string[];
   telephone: string;
   email: string;
   role?: string;
+  paymentStatus?: { label: string; kind: 'review' | 'behind' | 'paid' | 'ahead' | 'current'; months: number };
 };
 
 export default function Members() {
@@ -144,6 +146,7 @@ export default function Members() {
         member.firstName,
         member.lastName,
         `${member.firstName} ${member.lastName}`,
+        (member.parentFirstNames || []).join(' '),
         member.telephone,
         member.email,
         member.role || '',
@@ -153,6 +156,8 @@ export default function Members() {
   const openMember = (memberId: string) => {
     if (editingId !== memberId) navigate(`/members/${memberId}`);
   };
+  const canViewPayments = user?.role === 'finance' || user?.role === 'admin';
+  const canViewPaymentStatus = user?.role === 'finance' || user?.role === 'admin';
 
   if (authLoading || loading || user?.role === 'user') {
     return <p role="status" className="px-4 py-24 text-center text-slate-600">Loading members…</p>;
@@ -206,18 +211,19 @@ export default function Members() {
           <p className="mt-8 text-slate-600">No active members were found.</p>
         ) : (
           <div className="mt-8 overflow-x-auto">
-            <table className="w-full min-w-[42rem] text-left">
+            <table className="w-full min-w-2xl text-left">
               <thead className="border-b border-slate-300 text-sm text-blue-950">
                 <tr>
-                  <th className="px-3 py-3 font-bold">First name</th>
-                  <th className="px-3 py-3 font-bold">Last name</th>
+                  <th className="px-3 py-3 font-bold">Member name(s)</th>
                   <th className="px-3 py-3 font-bold">Telephone</th>
                   <th className="px-3 py-3 font-bold">Email</th>
+                  {canViewPaymentStatus && <th className="px-3 py-3 font-bold">Status</th>}
                   {user?.role === 'admin' && <th className="px-3 py-3 font-bold">Role</th>}
                   {user?.role === 'admin' && <th className="px-3 py-3 font-bold">Actions</th>}
+                  {canViewPayments && <th className="px-3 py-3 font-bold">Record-Payment</th>}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm">
                 {filteredMembers.map((member) => (
                   <tr
                     key={member.id}
@@ -231,10 +237,15 @@ export default function Members() {
                   >
                     {editingId === member.id ? (
                       <>
-                        <td className="px-2 py-3"><input aria-label="First name" className="w-full rounded border p-2" value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} /></td>
-                        <td className="px-2 py-3"><input aria-label="Last name" className="w-full rounded border p-2" value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} /></td>
+                        <td className="px-2 py-3">
+                          <div className="space-y-2">
+                            <input aria-label="First name" className="w-full rounded border p-2" value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} />
+                            <input aria-label="Last name" className="w-full rounded border p-2" value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} />
+                          </div>
+                        </td>
                         <td className="px-2 py-3"><input aria-label="Telephone" className="w-full rounded border p-2" value={draft.telephone} onChange={(event) => setDraft({ ...draft, telephone: event.target.value })} /></td>
                         <td className="px-2 py-3"><input aria-label="Email" type="email" className="w-full rounded border p-2" value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} /></td>
+                        {canViewPaymentStatus && <td className="px-3 py-2">{renderPaymentStatus(member.paymentStatus)}</td>}
                         <td className="px-2 py-3">
                           {member.id === user?.id ? (
                             <span className="capitalize text-slate-600">Admin</span>
@@ -264,17 +275,33 @@ export default function Members() {
                             </button>
                           </div>
                         </td>
+                        {canViewPayments && (
+                          <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                            <Link
+                              to={`/finance/members/${encodeURIComponent(member.id)}/payments`}
+                              className="inline-flex border-0 bg-transparent px-3 py-2 text-sm font-semibold text-blue-800 transition hover:underline"
+                              aria-label={`Payment history for ${member.firstName} ${member.lastName}`}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              Record-Payment
+                            </Link>
+                          </td>
+                        )}
                       </>
                     ) : (
                       <>
-                        <td className="px-3 py-2">{member.firstName}</td>
-                        <td className="px-3 py-2">{member.lastName}</td>
+                        <td className="px-3 py-2 font-medium text-blue-950">
+                          {(member.parentFirstNames?.length ? member.parentFirstNames : [member.firstName]).join(' / ')}
+                        </td>
                         <td className="px-3 py-2">
                           {member.telephone ? <a onClick={(event) => event.stopPropagation()} className="text-blue-800 hover:underline" href={`tel:${member.telephone}`}>{member.telephone}</a> : 'Not provided'}
                         </td>
                         <td className="px-3 py-2">
                           <a onClick={(event) => event.stopPropagation()} className="text-blue-800 hover:underline" href={`mailto:${member.email}`}>{member.email}</a>
                         </td>
+                        {canViewPaymentStatus && (
+                          <td className="px-3 py-2">{renderPaymentStatus(member.paymentStatus)}</td>
+                        )}
                         {user?.role === 'admin' && (
                           <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
                             <select
@@ -311,13 +338,25 @@ export default function Members() {
                             </div>
                           </td>
                         )}
+                        {canViewPayments && (
+                          <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                            <Link
+                              to={`/finance/members/${encodeURIComponent(member.id)}/payments`}
+                              className="inline-flex border-0 bg-transparent px-3 py-2 text-sm font-semibold text-blue-800 transition hover:underline"
+                              aria-label={`Payment history for ${member.firstName} ${member.lastName}`}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              Record-Payment
+                            </Link>
+                          </td>
+                        )}
                       </>
                     )}
                   </tr>
                 ))}
                 {filteredMembers.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'admin' ? 6 : 4} className="px-3 py-8 text-center text-slate-600">
+                    <td colSpan={(user?.role === 'admin' ? 5 : 3) + (canViewPaymentStatus ? 1 : 0) + (canViewPayments ? 1 : 0)} className="px-3 py-8 text-center text-slate-600">
                       No members match your search.
                     </td>
                   </tr>
@@ -329,4 +368,18 @@ export default function Members() {
       </div>
     </section>
   );
+}
+
+function renderPaymentStatus(status: Member['paymentStatus']) {
+  if (!status) return <span className="text-slate-400">—</span>;
+
+  const tone = status.kind === 'behind' || status.kind === 'review'
+    ? 'text-amber-800'
+    : status.kind === 'paid'
+      ? 'text-emerald-700'
+      : status.kind === 'ahead'
+        ? 'text-blue-800'
+        : 'text-slate-700';
+
+  return <span className={`font-semibold ${tone}`}>{status.label}</span>;
 }

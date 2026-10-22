@@ -12,6 +12,8 @@ import AdminInvitationsPage from './components/AdminInvitationsPage';
 import Members from './components/Members';
 import AcceptInvitation from './components/AcceptInvitation';
 import MemberDetails from './components/MemberDetails';
+import Finance from './components/Finance';
+import TeamRoster from './components/TeamRoster';
 import AuthProvider from './AuthProvider';
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -56,12 +58,14 @@ function App() {
             }
           />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/teams/:division" element={<TeamRoster />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/login" element={<Login />} />
           <Route path="/member" element={<MemberDashboard />} />
           <Route path="/members" element={<Members />} />
           <Route path="/members/:id" element={<MemberDetails />} />
           <Route path="/admin/invitations" element={<AdminInvitationsPage />} />
+          <Route path="/finance/*" element={<Finance />} />
           <Route path="/accept-invite/:token" element={<AcceptInvitation />} />
           <Route
             path="*"

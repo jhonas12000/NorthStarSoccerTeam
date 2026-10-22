@@ -128,7 +128,7 @@ export default function AcceptInvitation() {
                 <TextField label="Last name" value={child.lastName} onChange={(value) => updateChild(index, 'lastName', value)} required />
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <SelectField label="Gender" value={child.gender} onChange={(value) => updateChild(index, 'gender', value)} options={[['female', 'Female'], ['male', 'Male'], ['non_binary', 'Non-binary'], ['prefer_not_to_say', 'Prefer not to say']]} />
+                  <SelectField label="Gender" value={child.gender} onChange={(value) => updateChild(index, 'gender', value)} options={[['female', 'Female'], ['male', 'Male']]} />
                 <SelectField label="Birth month" value={child.birthMonth} onChange={(value) => updateChild(index, 'birthMonth', value)} options={months.map((month, monthIndex) => [String(monthIndex + 1), month])} />
                 <SelectField label="Birth year" value={child.birthYear} onChange={(value) => updateChild(index, 'birthYear', value)} options={years.map((year) => [String(year), String(year)])} />
               </div>

@@ -4,6 +4,7 @@ import { getDatabase } from "../database.js";
 
 const router = Router();
 const assignableRoles = new Set(["head_coach", "chairman", "finance", "user"]);
+const teamAgeLimits = new Map([["U-6", 6], ["U-8", 8], ["U-10", 10], ["U-12", 12], ["U-14", 14]]);
 
 function normalizedRole(role) {
   return role === "members" ? "user" : (role || "user");
@@ -34,27 +35,131 @@ function publicMember(user) {
   };
 }
 
+function membershipMonthStatus(user, transactions, now = new Date()) {
+  const paidMonths = new Set(transactions.flatMap((transaction) => transaction.monthsPaid || []));
+  const unallocatedMonths = transactions.reduce(
+    (count, transaction) => count + (transaction.months && !transaction.monthsPaid?.length ? transaction.months : 0),
+    0,
+  );
+  if (unallocatedMonths) {
+    return { label: "Needs review", kind: "review", months: unallocatedMonths };
+  }
+
+  const startDate = user.createdAt instanceof Date ? user.createdAt : now;
+  const startMonth = startDate.toISOString().slice(0, 7);
+  const currentMonth = now.toISOString().slice(0, 7);
+  const currentYear = currentMonth.slice(0, 4);
+  const dueMonths = [];
+  const [startYearNumber, startMonthNumber] = startMonth.split("-").map(Number);
+  const [currentYearNumber, currentMonthNumber] = currentMonth.split("-").map(Number);
+  for (let cursor = startYearNumber * 12 + startMonthNumber - 1; cursor <= currentYearNumber * 12 + currentMonthNumber - 1; cursor += 1) {
+    const year = Math.floor(cursor / 12);
+    const month = (cursor % 12) + 1;
+    dueMonths.push(`${year}-${String(month).padStart(2, "0")}`);
+  }
+
+  const monthsBehind = dueMonths.filter((month) => !paidMonths.has(month)).length;
+  if (monthsBehind) {
+    return { label: `${monthsBehind} month${monthsBehind === 1 ? "" : "s"} behind`, kind: "behind", months: monthsBehind };
+  }
+
+  const monthsPaidThisYear = [...paidMonths].filter((month) => month.startsWith(`${currentYear}-`)).length;
+  if (monthsPaidThisYear === 12) return { label: "Fully paid", kind: "paid", months: 12 };
+
+  const monthsAhead = [...paidMonths].filter((month) => month > currentMonth).length;
+  if (monthsAhead) {
+    return { label: `${monthsAhead} month${monthsAhead === 1 ? "" : "s"} ahead`, kind: "ahead", months: monthsAhead };
+  }
+  return { label: "Up to date", kind: "current", months: 0 };
+}
+
 router.get("/", async (request, response) => {
   try {
     const database = await getDatabase();
+    const role = request.authenticatedUser.role;
+    const includePaymentStatus = role === "finance" || role === "admin";
     const users = await database
       .collection("users")
       .find(
         { isActive: true },
-        { projection: { firstName: 1, lastName: 1, telephone: 1, phone: 1, email: 1, role: 1 } },
+        { projection: { firstName: 1, lastName: 1, parents: 1, telephone: 1, phone: 1, email: 1, role: 1, createdAt: 1 } },
       )
       .sort({ lastName: 1, firstName: 1 })
       .limit(500)
       .toArray();
 
+    const paymentTransactions = includePaymentStatus && users.length
+      ? await database.collection("finance_transactions")
+        .find({ memberId: { $in: users.map((user) => user._id) }, type: "income" }, {
+          projection: { memberId: 1, monthsPaid: 1, months: 1 },
+        })
+        .toArray()
+      : [];
+    const paymentsByMember = new Map();
+    for (const transaction of paymentTransactions) {
+      const key = transaction.memberId.toString();
+      paymentsByMember.set(key, [...(paymentsByMember.get(key) || []), transaction]);
+    }
+
     const members = users.map((user) => ({
       ...publicMember(user),
-      ...(request.authenticatedUser.role === "admin" ? { role: normalizedRole(user.role) } : {}),
+      parentFirstNames: user.parents?.length
+        ? user.parents.map((parent) => parent.firstName || "").filter(Boolean)
+        : [user.firstName || ""].filter(Boolean),
+      ...(role === "admin" ? { role: normalizedRole(user.role) } : {}),
+      ...(includePaymentStatus ? {
+        paymentStatus: membershipMonthStatus(user, paymentsByMember.get(user._id.toString()) || []),
+      } : {}),
     }));
     response.json({ members });
   } catch (error) {
     console.error("Unable to list members:", error);
     response.status(503).json({ error: "Member directory is temporarily unavailable." });
+  }
+});
+
+router.get("/teams/:division/roster", async (request, response) => {
+  if (!new Set(["admin", "head_coach", "chairman"]).has(request.authenticatedUser?.role)) {
+    return response.status(403).json({ error: "Team roster access required." });
+  }
+
+  const division = request.params.division.toUpperCase();
+  const maximumAge = teamAgeLimits.get(division);
+  if (!maximumAge) return response.status(404).json({ error: "Team not found." });
+
+  try {
+    const database = await getDatabase();
+    const users = await database.collection("users")
+      .find({ isActive: true, children: { $type: "array", $ne: [] } }, {
+        projection: { firstName: 1, lastName: 1, parents: 1, children: 1 },
+      })
+      .sort({ lastName: 1, firstName: 1 })
+      .toArray();
+    const now = new Date();
+    const players = users.flatMap((user) => (user.children || []).flatMap((child) => {
+      const birthMonth = Number(child.birthMonth);
+      const birthYear = Number(child.birthYear);
+      if (!Number.isInteger(birthMonth) || birthMonth < 1 || birthMonth > 12 || !Number.isInteger(birthYear)) return [];
+
+      let age = now.getFullYear() - birthYear;
+      if (now.getMonth() + 1 < birthMonth) age -= 1;
+      if (age < maximumAge - 1 || age > maximumAge) return [];
+
+      return [{
+        id: typeof child.id === "string" ? child.id : `${user._id}:${child.firstName}:${child.lastName}:${birthYear}`,
+        firstName: child.firstName || "",
+        lastName: child.lastName || "",
+        age,
+        parents: (user.parents || [{ firstName: user.firstName || "", lastName: user.lastName || "" }])
+          .map((parent) => `${parent.firstName || ""} ${parent.lastName || ""}`.trim())
+          .filter(Boolean),
+      }];
+    }));
+
+    response.json({ division, players });
+  } catch (error) {
+    console.error("Unable to load team roster:", error);
+    response.status(503).json({ error: "Team roster is temporarily unavailable." });
   }
 });
 

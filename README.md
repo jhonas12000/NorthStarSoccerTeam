@@ -33,18 +33,13 @@ Example request body for `POST /api/members`:
 }
 ```
 
-## Stripe donations
+## Monthly membership payments
 
-Donations use Stripe-hosted Checkout. Copy `.env.example` to `.env` and set
-`STRIPE_SECRET_KEY` to a Stripe **test-mode** secret key while developing. Keep
-the secret key on the server; never add it to frontend code or commit `.env`.
-
-Run `npm run server` in one terminal and `npm run dev` in another. The app
-proxies its checkout request to the local payment API. Switch to a live Stripe
-secret key only after configuring the production API and verifying the account.
-
-Set `CHECKOUT_ORIGIN` to the deployed site's origin when deploying, and route
-`/api/create-checkout-session` to the Express server in `backend/express.js`.
+Finance users can open a member's **Payment** page to review all 12 months for
+each membership year. Paid months are marked, and due months can be selected
+for direct/offline payment recording. Each selected month adds **$30** to the
+finance income ledger and is saved in that member's payment history. The app
+does not process a card payment for membership dues.
 
 ## Project layout
 

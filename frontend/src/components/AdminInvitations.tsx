@@ -21,6 +21,7 @@ export default function AdminInvitations() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
 
   const loadInvitations = async () => {
     try {
@@ -100,6 +101,31 @@ export default function AdminInvitations() {
       setMessage('Invitation link copied to the clipboard.');
     } catch {
       setError('Unable to copy automatically. Select and copy the link manually.');
+    }
+  };
+
+  const deleteInvitation = async (invitation: Invitation) => {
+    const recipient = invitation.email || invitation.telephone || 'this recipient';
+    if (!window.confirm(`Delete the pending invitation for ${recipient}? To change its details, delete it and create a new invitation.`)) return;
+
+    setError('');
+    setMessage('');
+    setDeletingInvitationId(invitation.id);
+    try {
+      const response = await fetch(`/api/invitations/${encodeURIComponent(invitation.id)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Unable to delete invitation.');
+      }
+      setInvitations((current) => current.filter((item) => item.id !== invitation.id));
+      setMessage(`Invitation for ${recipient} deleted. You can now create a replacement invitation.`);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete invitation.');
+    } finally {
+      setDeletingInvitationId(null);
     }
   };
 
@@ -218,6 +244,7 @@ export default function AdminInvitations() {
                   <th className="py-3 pr-4 font-semibold">Role</th>
                   <th className="py-3 pr-4 font-semibold">Status</th>
                   <th className="py-3 font-semibold">Expires</th>
+                  <th className="py-3 pl-4 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,6 +260,24 @@ export default function AdminInvitations() {
                     <td className="py-3 pr-4 capitalize text-slate-600">{invitation.status}</td>
                     <td className="py-3 text-slate-600">
                       {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3 pl-4 text-right">
+                      {invitation.status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => void deleteInvitation(invitation)}
+                          disabled={deletingInvitationId === invitation.id}
+                          aria-label={`Delete invitation for ${invitation.email || invitation.telephone}`}
+                          className="rounded p-2 text-red-700 hover:bg-red-50 disabled:cursor-wait disabled:opacity-50"
+                          title="Delete pending invitation"
+                        >
+                          {deletingInvitationId === invitation.id ? 'Deleting…' : (
+                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2">
+                              <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5M14 11v5" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

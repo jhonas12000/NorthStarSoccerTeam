@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcrypt";
 import { Router } from "express";
+import { ObjectId } from "mongodb";
 import { getDatabase } from "../database.js";
 import { requireAdmin } from "./auth.js";
 
@@ -14,6 +15,29 @@ function hashToken(token) {
 
 function normalizeTelephone(value) {
   return value.replace(/\D/g, "");
+}
+
+async function memberAlreadyRegistered(users, { email, telephoneNormalized }) {
+  const queries = [];
+  if (email) queries.push({ email });
+  if (telephoneNormalized) queries.push({ telephoneNormalized });
+
+  if (queries.length && await users.findOne({ $or: queries }, { projection: { _id: 1 } })) {
+    return true;
+  }
+  const legacyContactsCursor = users.find(
+    { $or: [{ email: { $type: "string" } }, { telephone: { $type: "string" } }, { phone: { $type: "string" } }] },
+    { projection: { email: 1, telephone: 1, phone: 1 } },
+  );
+  for await (const user of legacyContactsCursor) {
+    if (email && typeof user.email === "string" && user.email.trim().toLowerCase() === email) {
+      return true;
+    }
+    if (telephoneNormalized && normalizeTelephone(user.telephone || user.phone || "") === telephoneNormalized) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function cleanText(value) {
@@ -75,7 +99,7 @@ router.post("/accept/:token", async (request, response) => {
   const telephoneNormalized = normalizeTelephone(telephone);
   const password = typeof request.body?.password === "string" ? request.body.password : "";
   const children = Array.isArray(request.body?.children) ? request.body.children : [];
-  const allowedGenders = new Set(["female", "male", "non_binary", "prefer_not_to_say"]);
+  const allowedGenders = new Set(["female", "male"]);
   const currentYear = new Date().getFullYear();
 
   if (!parent1FirstName || !parent1LastName) {
@@ -127,9 +151,8 @@ router.post("/accept/:token", async (request, response) => {
     }
 
     const users = database.collection("users");
-    const duplicate = await users.findOne({ $or: [{ email }, { telephoneNormalized }] });
-    if (duplicate) {
-      return response.status(409).json({ error: "An account already uses this email or telephone number." });
+    if (await memberAlreadyRegistered(users, { email, telephoneNormalized })) {
+      return response.status(409).json({ error: "Member already registered." });
     }
 
     await users.createIndex({ email: 1 }, { unique: true });
@@ -166,7 +189,7 @@ router.post("/accept/:token", async (request, response) => {
     response.status(201).json({ message: "Account created successfully." });
   } catch (error) {
     if (error?.code === 11000) {
-      return response.status(409).json({ error: "An account already uses this email or telephone number." });
+      return response.status(409).json({ error: "Member already registered." });
     }
     console.error("Unable to accept invitation:", error);
     response.status(503).json({ error: "Unable to create the account." });
@@ -214,13 +237,11 @@ router.post("/", async (request, response) => {
     const users = database.collection("users");
     const invites = database.collection("invites");
 
-    const userContactQuery = contactMethod === "email"
-      ? { email }
-      : { $or: [{ telephoneNormalized }, { telephone }] };
-    if (await users.findOne(userContactQuery)) {
-      return response.status(409).json({
-        error: `A user with this ${contactMethod === "email" ? "email" : "telephone number"} already exists.`,
-      });
+    if (await memberAlreadyRegistered(users, {
+      email: contactMethod === "email" ? email : "",
+      telephoneNormalized: contactMethod === "telephone" ? telephoneNormalized : "",
+    })) {
+      return response.status(409).json({ error: "Member already registered." });
     }
 
     const now = new Date();
@@ -261,6 +282,29 @@ router.post("/", async (request, response) => {
   } catch (error) {
     console.error("Unable to create invitation:", error);
     response.status(503).json({ error: "Unable to create the invitation." });
+  }
+});
+
+router.delete("/:id", async (request, response) => {
+  if (!ObjectId.isValid(request.params.id)) {
+    return response.status(400).json({ error: "Invalid invitation ID." });
+  }
+
+  try {
+    const database = await getDatabase();
+    const result = await database.collection("invites").deleteOne({
+      _id: new ObjectId(request.params.id),
+      acceptedAt: { $exists: false },
+      revokedAt: { $exists: false },
+      expiresAt: { $gt: new Date() },
+    });
+    if (!result.deletedCount) {
+      return response.status(404).json({ error: "Only pending invitations can be deleted." });
+    }
+    response.status(204).end();
+  } catch (error) {
+    console.error("Unable to delete invitation:", error);
+    response.status(503).json({ error: "Unable to delete the invitation." });
   }
 });
 

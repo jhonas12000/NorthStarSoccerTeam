@@ -8,6 +8,7 @@ export default function Navbar() {
 
   const closeMenu = () => setMenuOpen(false);
   const signOut = async () => {
+    if (!window.confirm('Are you sure you want to sign out?')) return;
     await logout();
     closeMenu();
   };
@@ -45,7 +46,7 @@ export default function Navbar() {
           </button>
 
           {/* Desktop navigation */}
-          <div className="hidden items-center gap-7 md:flex">
+          <div className="hidden items-center gap-7 text-sm md:flex">
             <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/#home">
               Home
             </Link>
@@ -69,7 +70,12 @@ export default function Navbar() {
                 Members
               </Link>
             )}
-            {user && user.role !== 'user' ? (
+            {user && (user.role === 'finance' || user.role === 'admin') && (
+              <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/finance">
+                Finance
+              </Link>
+            )}
+            {user ? (
               <>
                 <Link className="font-semibold text-blue-950 hover:text-blue-600" to="/member">
                   Dashboard
@@ -108,7 +114,7 @@ export default function Navbar() {
         {/* Mobile navigation */}
         {menuOpen && (
           <div className="border-t border-slate-200 py-4 md:hidden">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 text-sm">
               <Link
                 className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
                 to="/#home"
@@ -167,7 +173,17 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {user && user.role !== 'user' ? (
+              {user && (user.role === 'finance' || user.role === 'admin') && (
+                <Link
+                  className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"
+                  to="/finance"
+                  onClick={closeMenu}
+                >
+                  Finance
+                </Link>
+              )}
+
+              {user ? (
                 <>
                   <Link
                     className="rounded-md px-3 py-3 font-semibold text-blue-950 hover:bg-slate-100"

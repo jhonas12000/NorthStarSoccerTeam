@@ -15,8 +15,40 @@ type Member = Person & {
   isActive?: boolean;
   createdAt?: string;
 };
+type MemberPayment = {
+  id: string;
+  amountCents: number;
+  category: string;
+  description: string;
+  date: string;
+  monthsPaid: string[];
+};
+type MemberPaymentHistory = {
+  totalPaidCents: number;
+  paidMonths: string[];
+  unallocatedMonthsCount: number;
+  member: { membershipStartMonth: string };
+  payments: MemberPayment[];
+};
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const formatCurrency = (amountCents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amountCents / 100);
+const monthKeyLabel = (monthKey: string) => {
+  const [year, month] = monthKey.split('-').map(Number);
+  return `${monthNames[month - 1]} ${year}`;
+};
+const currentYearDueMonths = (membershipStartMonth: string) => {
+  const year = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const membershipYear = Number(membershipStartMonth.slice(0, 4));
+  if (membershipYear > year) return [];
+  const firstDueMonth = membershipStartMonth.startsWith(`${year}-`)
+    ? Number(membershipStartMonth.slice(5, 7))
+    : 1;
+  return Array.from({ length: Math.max(0, currentMonth - firstDueMonth + 1) }, (_, index) => (
+    `${year}-${String(firstDueMonth + index).padStart(2, '0')}`
+  ));
+};
 
 export default function MemberDetails() {
   const { id = '' } = useParams();
@@ -24,6 +56,7 @@ export default function MemberDetails() {
   const { user, loading: authLoading } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const [viewerRole, setViewerRole] = useState('');
+  const [paymentHistory, setPaymentHistory] = useState<MemberPaymentHistory | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -42,12 +75,19 @@ export default function MemberDetails() {
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Unable to load member details.');
+        if (result.viewerRole === 'finance') {
+          const paymentResponse = await fetch(`/api/finance/members/${encodeURIComponent(id)}/payments`, { credentials: 'same-origin' });
+          const paymentResult = await paymentResponse.json();
+          if (!paymentResponse.ok) throw new Error(paymentResult.error || 'Unable to load payment history.');
+          result.paymentHistory = paymentResult;
+        }
         return result;
       })
       .then((result) => {
         if (active) {
           setMember(result.member);
           setViewerRole(result.viewerRole);
+          setPaymentHistory(result.paymentHistory || null);
         }
       })
       .catch((loadError) => {
@@ -108,7 +148,78 @@ export default function MemberDetails() {
           </div>
         )}
 
-        {viewerRole === 'finance' && <p className="mt-8 rounded-md bg-slate-100 p-3 text-sm text-slate-600">Finance access is limited to parent contact information.</p>}
+        {viewerRole === 'finance' && paymentHistory && (
+          <section className="mt-10 border-t border-slate-200 pt-8" aria-labelledby="member-payments-heading">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 id="member-payments-heading" className="text-xl font-bold text-blue-950">Payment information</h2>
+                <p className="mt-1 text-sm text-slate-500">Total paid: {formatCurrency(paymentHistory.totalPaidCents)}</p>
+              </div>
+              <Link to={`/finance/members/${encodeURIComponent(member.id)}/payments`} className="text-sm font-semibold text-blue-800 hover:underline">
+                Record payment →
+              </Link>
+            </div>
+
+            <div className="mt-5 grid gap-6 sm:grid-cols-2">
+              <div>
+                <h3 className="text-sm font-bold text-blue-950">Months paid</h3>
+                {paymentHistory.paidMonths.length ? (
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {[...paymentHistory.paidMonths].sort().map((month) => (
+                      <li key={month} className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800">{monthKeyLabel(month)}</li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-sm text-slate-500">No month-specific payments recorded.</p>}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-blue-950">Unpaid months this year</h3>
+                {(() => {
+                  const unpaidMonths = currentYearDueMonths(paymentHistory.member.membershipStartMonth)
+                    .filter((month) => !paymentHistory.paidMonths.includes(month));
+                  return unpaidMonths.length ? (
+                    <>
+                      <ul className="mt-2 flex flex-wrap gap-2">
+                        {unpaidMonths.map((month) => (
+                          <li key={month} className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">{monthKeyLabel(month)}</li>
+                        ))}
+                      </ul>
+                      <p className="mt-3 text-sm font-semibold text-amber-900">
+                        Outstanding: {formatCurrency(unpaidMonths.length * 3_000)} ({unpaidMonths.length} month{unpaidMonths.length === 1 ? '' : 's'})
+                      </p>
+                    </>
+                  ) : <p className="mt-2 text-sm text-emerald-700">No unpaid months this year.</p>;
+                })()}
+              </div>
+            </div>
+
+            {paymentHistory.unallocatedMonthsCount > 0 && (
+              <p className="mt-5 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+                {paymentHistory.unallocatedMonthsCount} previously paid month{paymentHistory.unallocatedMonthsCount === 1 ? '' : 's'} lack specific month allocations; please review before assessing outstanding dues.
+              </p>
+            )}
+
+            <div className="mt-6 overflow-x-auto">
+              <h3 className="text-sm font-bold text-blue-950">Payment history</h3>
+              {paymentHistory.payments.length ? (
+                <table className="mt-2 w-full min-w-xl text-left text-sm">
+                  <thead className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr><th className="px-3 py-3">Date paid</th><th className="px-3 py-3">Months paid</th><th className="px-3 py-3">Description</th><th className="px-3 py-3 text-right">Amount</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paymentHistory.payments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="px-3 py-3 whitespace-nowrap">{payment.date ? new Date(`${payment.date}T00:00:00`).toLocaleDateString() : '—'}</td>
+                        <td className="px-3 py-3">{payment.monthsPaid.length ? payment.monthsPaid.map(monthKeyLabel).join(', ') : 'Not specified'}</td>
+                        <td className="px-3 py-3">{payment.description}</td>
+                        <td className="px-3 py-3 text-right font-semibold whitespace-nowrap">{formatCurrency(payment.amountCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p className="mt-2 text-sm text-slate-500">No payment history yet.</p>}
+            </div>
+          </section>
+        )}
       </div>
     </section>
   );
