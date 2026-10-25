@@ -3,6 +3,7 @@ import express from "express";
 import { resolve } from "node:path";
 import { closeDatabase, getDatabaseStatus } from "./database.js";
 import authRouter, { requirePrivateAccess } from "./routes/auth.js";
+import donationsRouter from "./routes/donations.js";
 import financeRouter from "./routes/finance.js";
 import invitationsRouter from "./routes/invitations.js";
 import membersRouter from "./routes/members.js";
@@ -25,6 +26,7 @@ app.get("/api/health", async (_request, response) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/create-checkout-session", donationsRouter);
 app.use("/api/invitations", invitationsRouter);
 app.use("/api/finance", requirePrivateAccess, financeRouter);
 app.use("/api/members", requirePrivateAccess, membersRouter);
