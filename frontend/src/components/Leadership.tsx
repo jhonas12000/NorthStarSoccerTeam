@@ -70,23 +70,25 @@ export default function Leadership() {
                 className="rounded-xl bg-white p-4 text-left shadow-sm sm:p-6 lg:p-7"
               >
                 <h3 className="text-center text-xl font-bold text-blue-950">{title}</h3>
-                <p className="mt-1 text-center text-sm italic text-slate-400">{name}</p>
-                <a
-                  href={`tel:${phone.replace(/[^\d+]/g, '')}`}
-                  className="mt-1 flex items-center justify-center gap-1.5 text-sm text-blue-800 hover:underline"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                    <path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 3a14 14 0 0 1-9-9l3-2-1-4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {phone}
-                </a>
-                <div className="mt-4 flex items-start gap-3 sm:gap-5 lg:gap-7">
-                  <img
-                    src={photo}
-                    alt={`${title} profile`}
-                    className="mt-2 h-24 w-16 shrink-0 rounded-md object-cover sm:mt-3 sm:h-32 sm:w-24"
-                  />
-                  <p className="mt-1 text-sm leading-6 text-slate-600 sm:mt-2 sm:text-base sm:leading-7">
+                <div className="mt-4 grid gap-5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-start sm:gap-6">
+                  <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                    <img
+                      src={photo}
+                      alt={`${title} profile`}
+                      className="h-36 w-28 rounded-lg object-cover shadow-sm sm:h-44 sm:w-32"
+                    />
+                    <p className="mt-3 text-sm font-medium text-slate-400">{name}</p>
+                    <a
+                      href={`tel:${phone.replace(/[^\d+]/g, '')}`}
+                      className="mt-1 flex items-center justify-center gap-1.5 text-sm text-blue-800 hover:underline sm:justify-start"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                        <path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 3a14 14 0 0 1-9-9l3-2-1-4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {phone}
+                    </a>
+                  </div>
+                  <p className="text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
                     {isExpanded ? description : `${previewWords}…`}{' '}
                     <button
                       type="button"
