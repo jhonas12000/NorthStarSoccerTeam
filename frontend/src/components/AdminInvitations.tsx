@@ -83,9 +83,14 @@ export default function AdminInvitations() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to create invitation.');
 
-      setInviteLink(new URL(result.invitePath, window.location.origin).toString());
       const recipient = result.invitation.email || result.invitation.telephone;
-      setMessage(`Invitation created for ${recipient}.`);
+      if (result.delivery?.sent) {
+        setInviteLink('');
+        setMessage(`Invitation sent to ${recipient}.`);
+      } else {
+        setInviteLink(new URL(result.invitePath, window.location.origin).toString());
+        setMessage(`Invitation created, but automatic delivery failed for ${recipient}. Share the link below. ${result.delivery?.error || ''}`.trim());
+      }
       setContact('');
       await loadInvitations();
     } catch (createError) {

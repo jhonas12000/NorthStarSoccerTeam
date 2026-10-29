@@ -41,6 +41,18 @@ for direct/offline payment recording. Each selected month adds **$30** to the
 finance income ledger and is saved in that member's payment history. The app
 does not process a card payment for membership dues.
 
+## Invitation delivery
+
+Admin-created invitations are sent automatically using the selected contact
+method: email through Resend or SMS through Twilio. Configure the provider's
+credentials in the local `.env` file and in Heroku **Settings → Config Vars**;
+never commit provider secrets. Set `APP_ORIGIN` to the exact public site URL in
+production so invitation links point to the deployed app. Resend requires a
+verified sender address/domain. Twilio phone numbers must use international
+E.164 format, such as `+15551234567`; trial accounts may only message verified
+recipients. If delivery is not configured or a provider rejects the message,
+the invitation is still created and the admin UI shows a manual share link.
+
 ## Project layout
 
 - `frontend/` contains the React UI, components, tests, Vite configuration, and

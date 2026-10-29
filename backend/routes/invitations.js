@@ -17,6 +17,68 @@ function normalizeTelephone(value) {
   return value.replace(/\D/g, "");
 }
 
+function normalizedInternationalTelephone(value) {
+  return value.startsWith("+") ? `+${normalizeTelephone(value)}` : "";
+}
+
+function invitationOrigin() {
+  const origin = process.env.APP_ORIGIN || process.env.CHECKOUT_ORIGIN;
+  if (origin) return origin.replace(/\/$/, "");
+  return process.env.NODE_ENV === "production" ? null : "http://localhost:5173";
+}
+
+async function sendInvitationEmail(email, inviteUrl, role) {
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+    throw new Error("Email delivery is not configured.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: [email],
+      subject: "Your North Star invitation",
+      text: `You have been invited to join North Star as ${role.replaceAll("_", " ")}. Create your account using this secure link: ${inviteUrl}\n\nThis invitation expires in seven days. If you were not expecting this invitation, you can ignore this message.`,
+      html: `<p>You have been invited to join North Star as <strong>${role.replaceAll("_", " ")}</strong>.</p><p><a href="${inviteUrl}">Create your account</a></p><p>This invitation expires in seven days. If you were not expecting this invitation, you can ignore this message.</p>`,
+    }),
+  });
+  if (!response.ok) throw new Error(`Email provider returned status ${response.status}.`);
+}
+
+async function sendInvitationText(telephone, inviteUrl, role) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
+  if (!accountSid || !authToken || (!messagingServiceSid && !fromNumber)) {
+    throw new Error("SMS delivery is not configured.");
+  }
+
+  const internationalTelephone = normalizedInternationalTelephone(telephone);
+  if (!internationalTelephone) throw new Error("Phone number must include its international country code.");
+
+  const payload = new URLSearchParams({
+    To: internationalTelephone,
+    Body: `North Star invited you to join as ${role.replaceAll("_", " ")}. Sign up here (expires in 7 days): ${inviteUrl}`,
+  });
+  if (messagingServiceSid) payload.set("MessagingServiceSid", messagingServiceSid);
+  else payload.set("From", fromNumber);
+
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: payload,
+  });
+  if (!response.ok) throw new Error(`SMS provider returned status ${response.status}.`);
+}
+
 async function memberAlreadyRegistered(users, { email, telephoneNormalized }) {
   const queries = [];
   if (email) queries.push({ email });
@@ -228,6 +290,9 @@ router.post("/", async (request, response) => {
   if (contactMethod === "telephone" && telephoneNormalized.length < 7) {
     return response.status(400).json({ error: "Enter a valid telephone number." });
   }
+  if (contactMethod === "telephone" && !/^\+[1-9]\d{7,14}$/.test(normalizedInternationalTelephone(telephone))) {
+    return response.status(400).json({ error: "Enter the telephone number in international format, including its +country code." });
+  }
   if (!allowedRoles.has(role)) {
     return response.status(400).json({ error: "Role must be Head Coach, Chairman, Finance, or User." });
   }
@@ -274,10 +339,32 @@ router.post("/", async (request, response) => {
     await invites.createIndex({ tokenHash: 1 }, { unique: true, sparse: true });
     await invites.createIndex({ expiresAt: 1 });
     const result = await invites.insertOne(invitation);
+    const origin = invitationOrigin();
+    const invitePath = `/accept-invite/${token}`;
+    const inviteUrl = origin ? new URL(invitePath, origin).toString() : "";
+    let delivery = { sent: false, method: contactMethod };
+
+    if (inviteUrl) {
+      try {
+        if (contactMethod === "email") await sendInvitationEmail(email, inviteUrl, role);
+        else await sendInvitationText(telephone, inviteUrl, role);
+        delivery = { sent: true, method: contactMethod };
+      } catch (deliveryError) {
+        console.error(`Unable to send invitation by ${contactMethod}:`, deliveryError instanceof Error ? deliveryError.message : "Delivery failed.");
+        delivery = {
+          sent: false,
+          method: contactMethod,
+          error: deliveryError instanceof Error ? deliveryError.message : "Delivery failed.",
+        };
+      }
+    } else {
+      delivery.error = "Set APP_ORIGIN to enable automatic invitation delivery in production.";
+    }
 
     response.status(201).json({
       invitation: publicInvitation({ _id: result.insertedId, ...invitation }),
-      invitePath: `/accept-invite/${token}`,
+      invitePath,
+      delivery,
     });
   } catch (error) {
     console.error("Unable to create invitation:", error);

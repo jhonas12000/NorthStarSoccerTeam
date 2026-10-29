@@ -20,6 +20,59 @@ afterEach(() => {
 });
 
 describe('AdminInvitations', () => {
+  it('reports that an email invitation was sent and hides the manual link', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ invitations: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          invitation: { ...invitation, email: 'newmember@example.com', status: 'pending' },
+          invitePath: '/accept-invite/private-token',
+          delivery: { sent: true, method: 'email' },
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ invitations: [{ ...invitation, email: 'newmember@example.com' }] }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AdminInvitations />);
+    await user.type(await screen.findByLabelText('Email address'), 'newmember@example.com');
+    await user.click(screen.getByRole('button', { name: 'Create invite' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Invitation sent to newmember@example.com.');
+    expect(screen.queryByLabelText('Share this link privately')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(expect.objectContaining({
+      body: expect.stringContaining('"contactMethod":"email"'),
+    }));
+  });
+
+  it('reports SMS delivery failure and provides a manual share link', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ invitations: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          invitation: { ...invitation, id: 'invite-sms', email: null, telephone: '+15551234567', contactMethod: 'telephone', status: 'pending' },
+          invitePath: '/accept-invite/sms-token',
+          delivery: { sent: false, method: 'telephone', error: 'SMS delivery is not configured.' },
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ invitations: [] }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AdminInvitations />);
+    await user.selectOptions(await screen.findByLabelText('Invite by'), 'telephone');
+    await user.type(screen.getByLabelText('Telephone number'), '+15551234567');
+    await user.click(screen.getByRole('button', { name: 'Create invite' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('automatic delivery failed');
+    expect((screen.getByLabelText('Share this link privately') as HTMLInputElement).value).toContain('/accept-invite/sms-token');
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(expect.objectContaining({
+      body: expect.stringContaining('"contactMethod":"telephone"'),
+    }));
+  });
+
   it('deletes a pending invitation after confirmation', async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn()
